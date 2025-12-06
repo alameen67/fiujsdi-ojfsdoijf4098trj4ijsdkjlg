@@ -1,1 +1,44 @@
-
+{
+  "gameModes": {
+    "1v1": {
+      "maxPlayers": 2,
+      "platformWidth": 400,
+      "platformHeight": 40,
+      "roundsToWin": 2,
+      "matchTime": 180
+    },
+    "ffa": {
+      "maxPlayers": 8,
+      "platformWidth": 800,
+      "platformHeight": 40,
+      "roundsToWin": null,
+      "matchTime": 300
+    }
+  },
+  "physics": {
+    "gravity": 1200,
+    "moveSpeed": 400,
+    "jumpForce": 500,
+    "maxFallSpeed": 800,
+    "friction": 0.8,
+    "knockbackMultiplier": 1.5,
+    "attackCooldown": 0.5,
+    "attackRange": 40,
+    "attackDamage": 10
+  },
+  "player": {
+    "radius": 20,
+    "health": 100,
+    "respawnTime": 3,
+    "colors": [
+      "#FF6B6B",
+      "#4ECDC4",
+      "#FFD166",
+      "#06D6A0",
+      "#118AB2",
+      "#EF476F",
+      "#7209B7",
+      "#F8961E"
+    ]
+  }
+}
