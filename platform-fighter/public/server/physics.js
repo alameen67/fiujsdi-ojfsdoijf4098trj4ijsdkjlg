@@ -1,70 +1,127 @@
-const GRAVITY = 1400;
-const MOVE_ACCEL = 2000;
-const MAX_RUN_SPEED = 300;
-const FRICTION = 0.85;
-const JUMP_VELOCITY = -500;
-const ATTACK_RANGE = 40;
-const ATTACK_COOLDOWN = 400;
-const BASE_KNOCKBACK = 200;
-const RESPAWN_DELAY = 1500;
-
-function step(room, dt) {
-  const events = [];
-  room.players.forEach(p => {
-    if (!p.alive) {
-      if (p.respawnTime && Date.now() >= p.respawnTime) {
-        p.alive = true;
-        p.x = room.spawnPoints[p.spawnIndex % room.spawnPoints.length].x;
-        p.y = room.spawnPoints[p.spawnIndex % room.spawnPoints.length].y;
-        p.vx = 0;
-        p.vy = 0;
-        p.respawnTime = null;
-      }
-      return;
-    }
-    if (p.input.left) p.vx -= MOVE_ACCEL*dt;
-    if (p.input.right) p.vx += MOVE_ACCEL*dt;
-    if (p.input.jump && p.onGround) {
-      p.vy = JUMP_VELOCITY;
-      p.onGround = false;
-    }
-    p.vx *= FRICTION;
-    p.vx = Math.max(-MAX_RUN_SPEED, Math.min(MAX_RUN_SPEED, p.vx));
-    p.vy += GRAVITY*dt;
-    p.x += p.vx*dt;
-    p.y += p.vy*dt;
-    if (p.y >= room.platform.y - 20) {
-      p.y = room.platform.y - 20;
-      p.vy = 0;
-      p.onGround = true;
-    }
-  });
-  const arr = Array.from(room.players);
-  for (let i=0;i<arr.length;i++){
-    for (let j=0;j<arr.length;j++){
-      if (i===j) continue;
-      const a = arr[i];
-      const b = arr[j];
-      if (!a.alive || !b.alive) continue;
-      if (a.input.attack && (!a.lastAttack || Date.now()-a.lastAttack>ATTACK_COOLDOWN)) {
-        if (Math.abs(a.x - b.x)<ATTACK_RANGE && Math.abs(a.y - b.y)<50) {
-          const dir = a.x < b.x ? 1 : -1;
-          b.vx += dir*BASE_KNOCKBACK;
-          b.vy += -BASE_KNOCKBACK*0.5;
-          a.lastAttack = Date.now();
-          events.push({ type:"hit", attackerId:a.id, victimId:b.id });
+class Physics {
+    static updatePlayer(player, deltaTime) {
+        // Apply gravity
+        const gravity = 1200;
+        const maxFallSpeed = 800;
+        
+        player.velocityY += gravity * deltaTime;
+        player.velocityY = Math.min(player.velocityY, maxFallSpeed);
+        
+        // Apply friction
+        player.velocityX *= 0.8;
+        
+        // Update position
+        player.x += player.velocityX * deltaTime;
+        player.y += player.velocityY * deltaTime;
+        
+        // Update attack cooldown
+        if (player.isAttacking) {
+            player.lastAttackTime += deltaTime;
+            if (player.lastAttackTime > 0.2) { // Attack animation duration
+                player.isAttacking = false;
+            }
         }
-      }
     }
-  }
-  room.players.forEach(p => {
-    if (p.y > room.platform.y + room.platform.height) {
-      p.alive = false;
-      p.respawnTime = Date.now() + RESPAWN_DELAY;
-      events.push({ type:"fall", playerId:p.id });
+    
+    static checkCollision(player1, player2) {
+        if (!player1.isAlive || !player2.isAlive) return null;
+        if (player1.isAttacking === false && player2.isAttacking === false) return null;
+        
+        const dx = player1.x - player2.x;
+        const dy = player1.y - player2.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const collisionDistance = 50; // Sum of player radii + attack range
+        
+        if (distance < collisionDistance) {
+            // Determine who attacked whom
+            if (player1.isAttacking && !player2.isAttacking) {
+                return {
+                    attacker: player1,
+                    victim: player2,
+                    direction: { x: dx / distance, y: dy / distance }
+                };
+            } else if (player2.isAttacking && !player1.isAttacking) {
+                return {
+                    attacker: player2,
+                    victim: player1,
+                    direction: { x: -dx / distance, y: -dy / distance }
+                };
+            }
+        }
+        
+        return null;
     }
-  });
-  return events;
+    
+    static applyKnockback(victim, direction, power = 1.0) {
+        const baseKnockback = 300;
+        const knockback = baseKnockback * power;
+        
+        victim.velocityX += direction.x * knockback;
+        victim.velocityY += direction.y * knockback;
+        
+        // Apply damage based on knockback power
+        const damage = 10 * power;
+        victim.health = Math.max(0, victim.health - damage);
+        
+        return {
+            knockback: { x: direction.x * knockback, y: direction.y * knockback },
+            damage: damage
+        };
+    }
+    
+    static checkPlatformCollision(player, platform) {
+        if (!player.isAlive) return false;
+        
+        const playerBottom = player.y + 30; // Player radius
+        const playerLeft = player.x - 20;
+        const playerRight = player.x + 20;
+        
+        const platformTop = platform.y;
+        const platformBottom = platform.y + platform.height;
+        const platformLeft = platform.x;
+        const platformRight = platform.x + platform.width;
+        
+        // Check if player is above platform and falling
+        if (player.velocityY > 0 &&
+            playerBottom <= platformBottom &&
+            playerBottom >= platformTop - 10 &&
+            playerRight > platformLeft &&
+            playerLeft < platformRight) {
+            
+            // Land on platform
+            player.y = platformTop - 30;
+            player.velocityY = 0;
+            player.isJumping = false;
+            return true;
+        }
+        
+        return false;
+    }
+    
+    static constrainToPlatform(player, platform) {
+        const playerRadius = 20;
+        const platformLeft = platform.x + playerRadius;
+        const platformRight = platform.x + platform.width - playerRadius;
+        
+        // Constrain horizontal movement to platform edges
+        if (player.x < platformLeft) {
+            player.x = platformLeft;
+            player.velocityX = Math.max(0, player.velocityX);
+        } else if (player.x > platformRight) {
+            player.x = platformRight;
+            player.velocityX = Math.min(0, player.velocityX);
+        }
+    }
+    
+    static canJump(player, platform) {
+        if (!player.isAlive) return false;
+        
+        const playerBottom = player.y + 30;
+        const platformTop = platform.y;
+        
+        // Can jump if on platform or very close to it
+        return Math.abs(playerBottom - platformTop) < 5 && !player.isJumping;
+    }
 }
 
-module.exports = { step };
+module.exports = Physics;
