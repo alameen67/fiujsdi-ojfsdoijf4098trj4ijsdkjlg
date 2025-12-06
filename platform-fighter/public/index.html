@@ -1,1 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Fighter 🎮</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-fist-raised"></i> Platform Fighter</h1>
+            <p class="subtitle">Battle your friends in real-time multiplayer mayhem!</p>
+        </header>
 
+        <main class="main-content">
+            <div class="game-selection" id="gameSelection">
+                <div class="mode-card" data-mode="1v1">
+                    <div class="mode-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <h2>1v1 Duel</h2>
+                    <p>Two players, one platform. First to fall loses!</p>
+                    <div class="mode-details">
+                        <div class="detail">
+                            <i class="fas fa-users"></i>
+                            <span>2 Players</span>
+                        </div>
+                        <div class="detail">
+                            <i class="fas fa-expand-alt"></i>
+                            <span>Small Platform</span>
+                        </div>
+                        <div class="detail">
+                            <i class="fas fa-skull-crossbones"></i>
+                            <span>Sudden Death</span>
+                        </div>
+                    </div>
+                    <button class="mode-select-btn" onclick="selectMode('1v1')">
+                        Select Mode
+                    </button>
+                </div>
+
+                <div class="mode-card" data-mode="ffa">
+                    <div class="mode-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h2>Free-For-All</h2>
+                    <p>Up to 8 players battle with respawns!</p>
+                    <div class="mode-details">
+                        <div class="detail">
+                            <i class="fas fa-users"></i>
+                            <span>2-8 Players</span>
+                        </div>
+                        <div class="detail">
+                            <i class="fas fa-expand-alt"></i>
+                            <span>Large Platform</span>
+                        </div>
+                        <div class="detail">
+                            <i class="fas fa-redo"></i>
+                            <span>Respawn System</span>
+                        </div>
+                    </div>
+                    <button class="mode-select-btn" onclick="selectMode('ffa')">
+                        Select Mode
+                    </button>
+                </div>
+            </div>
+
+            <div class="lobby-screen" id="lobbyScreen" style="display: none;">
+                <div class="lobby-header">
+                    <h2 id="lobbyModeTitle">1v1 Duel</h2>
+                    <div class="room-info">
+                        <span id="roomCodeDisplay">Connecting...</span>
+                        <button class="copy-btn" onclick="copyRoomCode()">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+
+                <div class="lobby-content">
+                    <div class="player-list" id="playerList">
+                        <h3>Players in Lobby <span id="playerCount">(0/2)</span></h3>
+                        <div class="players-container" id="playersContainer">
+                            <!-- Players will be added here -->
+                        </div>
+                    </div>
+
+                    <div class="game-info">
+                        <div class="info-card">
+                            <h3><i class="fas fa-gamepad"></i> Controls</h3>
+                            <div class="controls-list">
+                                <div class="control">
+                                    <span class="key">A / ←</span>
+                                    <span>Move Left</span>
+                                </div>
+                                <div class="control">
+                                    <span class="key">D / →</span>
+                                    <span>Move Right</span>
+                                </div>
+                                <div class="control">
+                                    <span class="key">W / ↑ / Space</span>
+                                    <span>Jump</span>
+                                </div>
+                                <div class="control">
+                                    <span class="key">J / K</span>
+                                    <span>Attack</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <h3><i class="fas fa-info-circle"></i> Game Rules</h3>
+                            <div id="modeRules">
+                                <p><strong>1v1 Mode:</strong> Knock your opponent off the platform. First to fall loses the round!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lobby-actions">
+                    <button class="btn-secondary" onclick="leaveLobby()">
+                        <i class="fas fa-sign-out-alt"></i> Leave Lobby
+                    </button>
+                    <button class="btn-primary" id="startGameBtn" onclick="startGame()" disabled>
+                        <i class="fas fa-play"></i> Start Game
+                    </button>
+                </div>
+            </div>
+
+            <div class="game-screen" id="gameScreen" style="display: none;">
+                <div class="game-header">
+                    <div class="game-info-bar">
+                        <div class="mode-indicator" id="modeIndicator">1v1</div>
+                        <div class="score-display" id="scoreDisplay">
+                            <!-- Scores will be shown here -->
+                        </div>
+                        <div class="game-timer" id="gameTimer">--:--</div>
+                    </div>
+                    <div class="countdown-overlay" id="countdownOverlay" style="display: none;">
+                        <div class="countdown-text" id="countdownText"></div>
+                    </div>
+                </div>
+
+                <div class="game-container">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
+
+                <div class="game-footer">
+                    <div class="player-hud" id="playerHud">
+                        <!-- Player HUD will be shown here -->
+                    </div>
+                    <div class="game-controls">
+                        <button class="btn-secondary" onclick="leaveGame()">
+                            <i class="fas fa-sign-out-alt"></i> Quit Game
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="connection-status" id="connectionStatus">
+                <i class="fas fa-wifi"></i>
+                <span id="connectionText">Connecting to server...</span>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Platform Fighter • Made with <i class="fas fa-heart"></i> for multiplayer fun</p>
+            <p class="footer-links">
+                <a href="#" onclick="showControls()"><i class="fas fa-gamepad"></i> Controls</a>
+                •
+                <a href="#" onclick="showHowToPlay()"><i class="fas fa-question-circle"></i> How to Play</a>
+                •
+                <a href="#" onclick="toggleSound()"><i class="fas fa-volume-up" id="soundIcon"></i> Sound</a>
+            </p>
+        </footer>
+    </div>
+
+    <div class="modal-overlay" id="controlsModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-gamepad"></i> Game Controls</h3>
+                <button class="modal-close" onclick="closeModal('controlsModal')">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="controls-grid">
+                    <div class="control-item">
+                        <div class="control-keys">
+                            <kbd>A</kbd> or <kbd>←</kbd>
+                        </div>
+                        <div class="control-desc">Move Left</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-keys">
+                            <kbd>D</kbd> or <kbd>→</kbd>
+                        </div>
+                        <div class="control-desc">Move Right</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-keys">
+                            <kbd>W</kbd> or <kbd>↑</kbd> or <kbd>Space</kbd>
+                        </div>
+                        <div class="control-desc">Jump</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-keys">
+                            <kbd>J</kbd> or <kbd>K</kbd>
+                        </div>
+                        <div class="control-desc">Attack</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-keys">
+                            <kbd>Esc</kbd>
+                        </div>
+                        <div class="control-desc">Pause/Leave</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="client.js"></script>
+</body>
+</html>
